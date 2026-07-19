@@ -120,7 +120,16 @@ function getHostname(url: string) {
     try { return new URL(url).hostname.replace(/^www\./, ''); }
     catch { return url; }
 }
+//extract answers and follwup from XML 
+function extractAnswer(content: string): string {
+    const match = content.match(/<ANSWER>([\s\S]*?)<\/ANSWER>/i);
+    return match ? (match[1] ?? "").trim() : content.replace(/<\/?ANSWER>/gi, '').trim();
+}
 
+function extractFollowUps(content: string): string[] {
+    const matches = [...content.matchAll(/<question>([\s\S]*?)<\/question>/g)];
+    return matches.map(m => (m[1] ?? "").trim());
+}
 // ─── UI-only types ────────────────────────────────────────────────────────────
 type FollowUpTurn = {
     role: "User" | "Assistant";
@@ -596,8 +605,14 @@ function Conversations() {
                         )}
 
                         {/* ── Mode B: history messages ── */}
-                        {!capturedQuery && messages.map((msg, idx) => (
-                            msg.role === "User" ? (
+                        {/* ── Mode B: history messages ── */}
+                        {!capturedQuery && messages.map((msg, idx) => {
+                            const isAssistant = msg.role === "Assistant";
+                            const isLastMessage = idx === messages.length - 1;
+                            const cleanContent = isAssistant ? extractAnswer(msg.content) : msg.content;
+                            const msgFollowUps = (isAssistant && isLastMessage) ? extractFollowUps(msg.content) : [];
+
+                            return msg.role === "User" ? (
                                 <div key={idx} className="flex justify-end">
                                     <div className="px-4 py-3 rounded-2xl text-sm leading-relaxed"
                                         style={{
@@ -613,21 +628,41 @@ function Conversations() {
                             ) : (
                                 <div key={idx} className="flex items-start gap-3">
                                     <PurplexityAvatar />
-                                    <div className="px-5 py-4 rounded-2xl text-sm leading-relaxed"
-                                        style={{
-                                            maxWidth: "calc(100% - 42px)",
-                                            background: "rgba(255,255,255,0.04)",
-                                            backdropFilter: "blur(12px)",
-                                            WebkitBackdropFilter: "blur(12px)",
-                                            border: "1px solid rgba(255,255,255,0.08)",
-                                            color: "hsl(0 0% 88%)",
-                                            boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
-                                        }}>
-                                        <p style={{ margin: 0 }}>{renderMarkdown(msg.content)}</p>
+                                    <div className="flex flex-col gap-3" style={{ maxWidth: "calc(100% - 42px)" }}>
+                                        <div className="px-5 py-4 rounded-2xl text-sm leading-relaxed"
+                                            style={{
+                                                background: "rgba(255,255,255,0.04)",
+                                                backdropFilter: "blur(12px)",
+                                                WebkitBackdropFilter: "blur(12px)",
+                                                border: "1px solid rgba(255,255,255,0.08)",
+                                                color: "hsl(0 0% 88%)",
+                                                boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
+                                            }}>
+                                            <p style={{ margin: 0 }}>{renderMarkdown(cleanContent)}</p>
+                                        </div>
+                                        {msgFollowUps.length > 0 && (
+                                            <div className="flex flex-col" style={{ gap: "2px" }}>
+                                                <p className="text-xs font-semibold uppercase tracking-widest mb-1"
+                                                    style={{ color: "hsl(240 5% 38%)" }}>Suggested</p>
+                                                {msgFollowUps.map((q, qi) => (
+                                                    <button key={qi} id={`followup-hist-${qi}`}
+                                                        onClick={() => startFollowUpStream(q)}
+                                                        disabled={isAnythingStreaming}
+                                                        className="flex items-center gap-2.5 text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        style={{ color: "hsl(240 5% 68%)", background: "transparent", border: "1px solid transparent" }}
+                                                        onMouseEnter={e => { if (!isAnythingStreaming) { e.currentTarget.style.background = "rgba(139,92,246,0.07)"; e.currentTarget.style.borderColor = "rgba(139,92,246,0.15)"; e.currentTarget.style.color = "hsl(270 70% 80%)"; } }}
+                                                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.color = "hsl(240 5% 68%)"; }}
+                                                    >
+                                                        <span style={{ color: "hsl(270 80% 65%)", fontSize: 13, flexShrink: 0 }}>✦</span>
+                                                        <span>{q}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            )
-                        ))}
+                            );
+                        })}
 
                         {/* ── Follow-up turns (both modes) ── */}
                         {followUpTurns.map((turn, idx) => {
