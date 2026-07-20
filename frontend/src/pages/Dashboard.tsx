@@ -15,7 +15,7 @@ import { BACKEND_URL } from "config";
 
 const supabase = createClient();
 
-// ─── Original Dashboard component (full original implementation) ──────────────
+// ─── draft ──────────────
 // function Dashboard() {
 //     const navigate = useNavigate();
 //     const [user, setUser] = useState<User | null>(null);
@@ -60,7 +60,7 @@ const supabase = createClient();
 // }
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ─── Spark Logo (8-ray asterisk, same as Auth page) ─────────────────────────
+// ─── Spark Logo  ─────────────────────────
 function SparkLogo({ size = 36 }: { size?: number }) {
     return (
         <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
