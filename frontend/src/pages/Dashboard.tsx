@@ -383,7 +383,14 @@ function Dashboard() {
                             rows={1}
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            onFocus={() => setSearchFocused(true)}
+                            onFocus={() => {
+                                if (!user) {
+                                    navigate("/auth");
+                                    return
+                                }
+                                setSearchFocused(true)
+                            }
+                            }
                             onBlur={() => setSearchFocused(false)}
                             placeholder="Ask Purplexity anything..."
                             className="w-full resize-none bg-transparent outline-none px-5 pt-4 pb-14 text-base leading-relaxed"
@@ -460,7 +467,14 @@ function Dashboard() {
                     {suggestions.map((s) => (
                         <button
                             key={s}
-                            onClick={() => handleSuggestion(s)}
+                            onClick={() => {
+                                if (!user) {
+                                    navigate("/auth");
+                                    return
+                                }
+                                handleSuggestion(s)
+                            }
+                            }
                             className="px-4 py-2 rounded-full text-sm transition-all duration-150 cursor-pointer"
                             style={{
                                 color: "hsl(240 5% 58%)",
