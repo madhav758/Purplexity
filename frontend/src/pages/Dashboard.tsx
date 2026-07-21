@@ -131,17 +131,35 @@ function Dashboard() {
     const [query, setQuery] = useState("");
     const [searchFocused, setSearchFocused] = useState(false);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const [authLoaded, setAuthLoaded] = useState(false);
+    useEffect(() => {
+        async function getSessionStatus() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (session) {
+                setUser(session.user);
+            }
+            setAuthLoaded(true);
+        }
+        getSessionStatus();
+    }, [])
 
     // Original: fetch user
-    useEffect(() => {
-        async function getInfo() {
-            const { data: { user }, error } = await supabase.auth.getUser();
-            if (user) {
-                setUser(user);
-            }
-        }
-        getInfo();
-    }, []);
+    // the get info is now redundant because we setUser in the getSessionStatus.
+    //  (to remember getSession() is instant (reads local storage) vs 
+    // getUser() which makes a network call 
+    // but in our case out backend aready validates the jwt 
+    // for every api call so its safe here ).
+
+
+    // useEffect(() => {
+    //     async function getInfo() {
+    //         const { data: { user }, error } = await supabase.auth.getUser();
+    //         if (user) {
+    //             setUser(user);
+    //         }
+    //     }
+    //     getInfo();
+    // }, []);
 
     // Original: fetch existing conversations
     useEffect(() => {
@@ -383,7 +401,15 @@ function Dashboard() {
                             rows={1}
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            onFocus={() => setSearchFocused(true)}
+                            onFocus={() => {
+                                if (!authLoaded) return;
+                                if (!user) {
+                                    navigate("/auth");
+                                    return
+                                }
+                                setSearchFocused(true)
+                            }
+                            }
                             onBlur={() => setSearchFocused(false)}
                             placeholder="Ask Purplexity anything..."
                             className="w-full resize-none bg-transparent outline-none px-5 pt-4 pb-14 text-base leading-relaxed"
@@ -460,7 +486,15 @@ function Dashboard() {
                     {suggestions.map((s) => (
                         <button
                             key={s}
-                            onClick={() => handleSuggestion(s)}
+                            onClick={() => {
+                                if (!authLoaded) return;
+                                if (!user) {
+                                    navigate("/auth");
+                                    return
+                                }
+                                handleSuggestion(s)
+                            }
+                            }
                             className="px-4 py-2 rounded-full text-sm transition-all duration-150 cursor-pointer"
                             style={{
                                 color: "hsl(240 5% 58%)",
