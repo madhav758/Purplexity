@@ -12,6 +12,7 @@ import type { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from "config";
+import { Session } from "inspector";
 
 const supabase = createClient();
 
@@ -131,17 +132,33 @@ function Dashboard() {
     const [query, setQuery] = useState("");
     const [searchFocused, setSearchFocused] = useState(false);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const [authLoaded, setAuthLoaded] = useState(false);
+    useEffect(() => {
+        async function getSessionStatus() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (session) {
+                setUser(session.user);
+            }
+            setAuthLoaded(true);
+        }
+        getSessionStatus();
+    }, [])
 
     // Original: fetch user
-    useEffect(() => {
-        async function getInfo() {
-            const { data: { user }, error } = await supabase.auth.getUser();
-            if (user) {
-                setUser(user);
-            }
-        }
-        getInfo();
-    }, []);
+    // the get info is now redundant because we setUser in the getSessionStatus.
+    //  (to remember getSession() is instant (reads local storage) vs getUser() which makes a network call 
+    // but in our case out backend aready validates the jwt for every api call so its safe here ).
+
+
+    // useEffect(() => {
+    //     async function getInfo() {
+    //         const { data: { user }, error } = await supabase.auth.getUser();
+    //         if (user) {
+    //             setUser(user);
+    //         }
+    //     }
+    //     getInfo();
+    // }, []);
 
     // Original: fetch existing conversations
     useEffect(() => {
@@ -384,6 +401,7 @@ function Dashboard() {
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onFocus={() => {
+                                if (!authLoaded) return;
                                 if (!user) {
                                     navigate("/auth");
                                     return
@@ -468,6 +486,7 @@ function Dashboard() {
                         <button
                             key={s}
                             onClick={() => {
+                                if (!authLoaded) return;
                                 if (!user) {
                                     navigate("/auth");
                                     return
