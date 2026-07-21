@@ -12,7 +12,6 @@ import type { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from "config";
-import { Session } from "inspector";
 
 const supabase = createClient();
 
@@ -146,8 +145,10 @@ function Dashboard() {
 
     // Original: fetch user
     // the get info is now redundant because we setUser in the getSessionStatus.
-    //  (to remember getSession() is instant (reads local storage) vs getUser() which makes a network call 
-    // but in our case out backend aready validates the jwt for every api call so its safe here ).
+    //  (to remember getSession() is instant (reads local storage) vs 
+    // getUser() which makes a network call 
+    // but in our case out backend aready validates the jwt 
+    // for every api call so its safe here ).
 
 
     // useEffect(() => {
